@@ -1,0 +1,129 @@
+# STA-MIL Implementation Walkthrough
+
+## What Was Built
+
+**STA-MIL** (Spatio-Temporal Attention MIL) — a novel transformer model for weakly supervised shoplifting detection on UCF-Crime.
+
+### Novel Contributions (vs. SOTA)
+| Feature | Existing SOTA | STA-MIL |
+|---------|--------------|---------|
+| Backbone | C3D / ResNet-50 | **VideoMAE-Base** |
+| Architecture | Single-stream transformer | **Dual-branch cross-attention** |
+| Temporal modeling | Fixed-scale pooling | **Multi-scale (3 temporal scales)** |
+| MIL loss | Standard ranking | **Contrastive + hard negative mining** |
+| Motion features | Optical flow (expensive) | **Gradient temporal differences** |
+
+---
+
+## Project Structure (Created)
+
+```
+Shoplifting Antigravity/
+├── configs/config.yaml              ← All hyperparameters
+├── src/
+│   ├── data/
+│   │   ├── extract_features.py     ← VideoMAE-Base feature extraction
+│   │   └── dataset.py              ← UCF-Crime MIL dataset loader
+│   ├── models/
+│   │   ├── sta_mil.py              ← Core STA-MIL model
+│   │   └── losses.py               ← Contrastive MIL loss
+│   ├── utils/
+│   │   ├── logger.py               ← TensorBoard + console logging
+│   │   └── metrics.py              ← AUC-ROC + SOTA comparison
+│   ├── train.py                    ← Full training loop
+│   ├── evaluate.py                 ← Evaluation + per-category AUC
+│   └── visualize.py                ← Anomaly score timeline plots
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## What to Run (Step by Step)
+
+### 1. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Extract VideoMAE features (~3–5 min per 100 videos)
+```bash
+python src/data/extract_features.py --config configs/config.yaml --split all
+```
+
+### 3. Run a quick dry-run test (validates full pipeline)
+```bash
+python src/train.py --config configs/config.yaml --dry_run --epochs 2
+```
+
+### 4. Train the full model
+```bash
+python src/train.py --config configs/config.yaml
+```
+
+Monitor with TensorBoard:
+```bash
+tensorboard --logdir logs/
+```
+
+### 5. Evaluate
+```bash
+python src/evaluate.py --config configs/config.yaml --checkpoint checkpoints/best_model.pth
+```
+
+### 6. Visualize
+```bash
+python src/visualize.py --category Shoplifting --n_videos 5 --compare
+```
+
+---
+
+## Architecture Diagram (for research paper)
+
+```
+Input: VideoMAE features [B, T=32, D=768]
+               │
+       ┌───────┴───────┐
+       │               │
+  Spatial          Temporal Branch
+  Transformer     (motion diff +
+  (4-layer         4-layer xformer)
+  self-attn)
+       │               │
+       └───────┬───────┘
+               │
+    Bidirectional Cross-Attention
+    Fusion (2 layers, 8 heads)
+               │
+    Multi-Scale Temporal Pooling
+    • Scale 1: global (1 group)
+    • Scale 2: mid (√T groups)
+    • Scale 3: local (T groups)
+               │
+    MIL Scoring Head (2-layer MLP)
+               │
+    Scores [B, T] ∈ [0,1]
+```
+
+---
+
+## SOTA Targets
+
+| Method | AUC |
+|--------|-----|
+| Sultani et al. (C3D) | 75.41% |
+| RTFM | 84.30% |
+| MGFN | 85.46% |
+| TEF-VAD | 86.40% |
+| REWARD | 86.94% |
+| **STA-MIL (target)** | **≥ 87%** |
+
+---
+
+## For the Research Paper
+
+Key claims to back with experiments:
+1. **Dual-branch fusion** outperforms single-stream (ablation: remove temporal branch)
+2. **Multi-scale pooling** helps catch both brief and extended shoplifting acts
+3. **Hard negative mining** in loss improves AUC vs. standard ranking loss
+4. **VideoMAE** features are superior to C3D/I3D for anomaly detection

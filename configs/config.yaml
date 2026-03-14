@@ -1,0 +1,68 @@
+# STA-MIL Configuration
+
+# Dataset
+dataset:
+  root: "UCF-crime"
+  features_dir: "features"
+  train_split: "UCF-crime/Train"
+  test_split: "UCF-crime/Test"
+  num_segments: 32         # temporal segments per video (MIL bags)
+  frame_size: 224
+  num_frames_per_clip: 16  # frames fed to VideoMAE per clip
+  temporal_stride: 4       # stride between sampled frames
+
+# Feature Extraction
+feature_extraction:
+  backbone: "MCG-NJU/videomae-base"   # VideoMAE-Base
+  feature_dim: 768
+  batch_size: 4
+  device: "cuda"
+
+# Model Architecture
+model:
+  feature_dim: 768          # backbone output dim
+  spatial_heads: 8          # multi-head attention heads (spatial branch)
+  spatial_layers: 4         # transformer layers (spatial)
+  temporal_heads: 8         # multi-head attention heads (temporal branch)
+  temporal_layers: 4        # transformer layers (temporal)
+  cross_attn_heads: 8       # cross-attention fusion heads
+  cross_attn_layers: 2      # cross-attention fusion layers
+  dropout: 0.1
+  num_scales: 3             # multi-scale temporal pooling scales
+  mlp_dim: 1024             # MIL head hidden dim
+  num_segments: 32          # must match dataset.num_segments
+
+# Training
+training:
+  epochs: 50
+  batch_size: 32            # pairs (anomalous bag, normal bag) per step
+  learning_rate: 1e-4
+  backbone_lr: 1e-5         # lower LR for fine-tuning backbone
+  weight_decay: 1e-4
+  warmup_epochs: 5
+  freeze_backbone_epochs: 5  # freeze backbone for first N epochs
+  grad_clip: 1.0
+  num_workers: 4
+  checkpoint_dir: "checkpoints"
+  log_dir: "logs"
+  save_every: 5             # save checkpoint every N epochs
+
+# Loss
+loss:
+  topk: 3                   # top-k segments selected for MIL
+  margin: 100.0             # ranking margin
+  lambda_sparsity: 8e-3     # sparsity regularization weight
+  lambda_smooth: 8e-4       # temporal smoothness weight
+  hard_neg_ratio: 0.3       # fraction of hard negatives to mine
+
+# Evaluation
+evaluation:
+  checkpoint: "checkpoints/best_model.pth"
+  results_dir: "results"
+  batch_size: 1
+
+# Logging
+logging:
+  tensorboard: true
+  console: true
+  log_interval: 10          # log every N batches
