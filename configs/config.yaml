@@ -36,9 +36,9 @@ model:
 training:
   epochs: 50
   batch_size: 32            # pairs (anomalous bag, normal bag) per step
-  learning_rate: 1e-4
-  backbone_lr: 1e-5         # lower LR for fine-tuning backbone
-  weight_decay: 1e-4
+  learning_rate: 0.0001
+  backbone_lr: 0.00001      # lower LR for fine-tuning backbone
+  weight_decay: 0.0001
   warmup_epochs: 5
   freeze_backbone_epochs: 5  # freeze backbone for first N epochs
   grad_clip: 1.0
@@ -51,8 +51,8 @@ training:
 loss:
   topk: 3                   # top-k segments selected for MIL
   margin: 100.0             # ranking margin
-  lambda_sparsity: 8e-3     # sparsity regularization weight
-  lambda_smooth: 8e-4       # temporal smoothness weight
+  lambda_sparsity: 0.008    # sparsity regularization weight
+  lambda_smooth: 0.0008     # temporal smoothness weight
   hard_neg_ratio: 0.3       # fraction of hard negatives to mine
 
 # Evaluation
