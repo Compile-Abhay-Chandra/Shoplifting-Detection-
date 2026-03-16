@@ -48,7 +48,7 @@ def load_model(cfg: dict, checkpoint_path: str, device: torch.device) -> STA_MIL
         num_segments=m_cfg['num_segments'],
     ).to(device)
 
-    ckpt = torch.load(checkpoint_path, map_location=device)
+    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
     model.load_state_dict(ckpt['model_state_dict'])
     print(f"Loaded checkpoint from: {checkpoint_path}")
     print(f"Checkpoint epoch: {ckpt.get('epoch', '?')}, best AUC: {ckpt.get('best_auc', 0)*100:.2f}%")

@@ -5,7 +5,6 @@ Plots anomaly score timelines for individual videos.
 Usage:
     python src/visualize.py --config configs/config.yaml \
                              --checkpoint checkpoints/best_model.pth \
-                             --video_dir UCF-crime/Test/Shoplifting \
                              --category Shoplifting
 """
 
@@ -45,7 +44,7 @@ def load_model(cfg: dict, checkpoint_path: str, device: torch.device) -> STA_MIL
         mlp_dim=m_cfg['mlp_dim'],
         num_segments=m_cfg['num_segments'],
     ).to(device)
-    ckpt = torch.load(checkpoint_path, map_location=device)
+    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
     model.load_state_dict(ckpt['model_state_dict'])
     model.eval()
     return model
